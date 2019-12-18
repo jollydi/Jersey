@@ -1,24 +1,29 @@
 package com.example.jersey
 
+import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.text.InputFilter
 import android.view.LayoutInflater
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import androidx.appcompat.app.AlertDialog
 
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
 import kotlinx.android.synthetic.main.dialog_edit.*
 import kotlinx.android.synthetic.main.dialog_edit.view.*
+import java.lang.NumberFormatException
 
 class MainActivity : AppCompatActivity() {
 
-    var previousName: String = "ANDROID"
-    var previousNumber: String = "17"
-    var jersey: Jersey = Jersey("ANDROID", 17, true)
+    private var previousName: String = "ANDROID"
+    private var previousNumber: Int = 17
+    private var previousIsRed: Boolean = true
+    private var jersey: Jersey = Jersey("ANDROID", 17, true)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,9 +46,13 @@ class MainActivity : AppCompatActivity() {
         if (!jersey.isRed) {
             view.toggle_button.toggle()
         }
-        builder.setPositiveButton(android.R.string.ok) {_, _ -> {}
+        builder.setPositiveButton(android.R.string.ok) { _, _ ->
             jersey.playerName = view.name_edit_text.text.toString()
-            jersey.playerNumber = view.number_edit_text.text.toString().toInt()
+            try {
+                jersey.playerNumber = view.number_edit_text.text.toString().toInt()
+            } catch (e: NumberFormatException) {
+                jersey.playerNumber = 0
+            }
             jersey.isRed = view.toggle_button.text == getString(R.string.red)
             updateView()
         }
@@ -54,7 +63,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateView() {
         name_text_view.text = jersey.playerName
         number_text_view.text = jersey.playerNumber.toString()
-        if(jersey.isRed) {
+        if (jersey.isRed) {
             image_view.setImageResource(R.drawable.red_jersey)
         } else {
             image_view.setImageResource(R.drawable.blue_jersey)
@@ -72,8 +81,44 @@ class MainActivity : AppCompatActivity() {
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         return when (item.itemId) {
-            R.id.action_settings -> true
+            R.id.action_settings -> {
+                startActivity(Intent(Settings.ACTION_LOCALE_SETTINGS))
+                true
+            }
+            R.id.reset -> {
+                storeJerseyInfo()
+                resetJersey()
+                updateView()
+                showSnackbar()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun resetJersey() {
+        jersey.playerName = getString(R.string.default_jersey_name)
+        jersey.playerNumber = 17
+        jersey.isRed = true
+    }
+
+    private fun storeJerseyInfo() {
+        previousName = jersey.playerName
+        previousNumber = jersey.playerNumber
+        previousIsRed = jersey.isRed
+    }
+
+    private fun retrieveJerseyInfo() {
+        jersey.playerName = previousName
+        jersey.playerNumber = previousNumber
+        jersey.isRed = previousIsRed
+    }
+
+    private fun showSnackbar() {
+        var snackbar = Snackbar.make(findViewById(R.id.coordinator_layout),"Jersey cleared", Snackbar.LENGTH_LONG)
+        snackbar.setAction("UNDO", View.OnClickListener {
+            retrieveJerseyInfo()
+            updateView()
+        }).show()
     }
 }
