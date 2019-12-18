@@ -1,5 +1,6 @@
 package com.example.jersey
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
@@ -30,10 +31,31 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        fab.setOnClickListener { view ->
+        fab.setOnClickListener {
             showEditDialog()
         }
+        retrieveSharedPreferencesData()
         updateView()
+    }
+
+    private fun retrieveSharedPreferencesData() {
+        val prefs = getSharedPreferences(Jersey.PREFS, Context.MODE_PRIVATE)
+        val name = prefs.getString(Jersey.KEY_NAME, getString(R.string.default_jersey_name)) ?: getString(R.string.default_jersey_name)
+        val number = prefs.getInt(Jersey.KEY_NUMBER, 17)
+        val isRed = prefs.getBoolean(Jersey.KEY_IS_RED, true)
+        jersey.playerName = name
+        jersey.playerNumber = number
+        jersey.isRed = isRed
+    }
+
+    override fun onPause() {
+        super.onPause()
+        val prefs = getSharedPreferences(Jersey.PREFS, Context.MODE_PRIVATE)
+        val editor = prefs.edit()
+        editor.putString(Jersey.KEY_NAME, jersey.playerName)
+        editor.putInt(Jersey.KEY_NUMBER, jersey.playerNumber)
+        editor.putBoolean(Jersey.KEY_IS_RED, jersey.isRed)
+        editor.commit()
     }
 
     private fun showEditDialog() {
